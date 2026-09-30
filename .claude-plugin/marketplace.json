@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "sneaxiii-plugins",
+  "description": "Sneaxiii's Claude Code plugins.",
+  "owner": {
+    "name": "Sneaxiii",
+    "url": "https://github.com/SNEAXIII"
+  },
+  "plugins": [
+    {
+      "name": "git",
+      "description": "Git workflow: conventional commits, open a PR, squash-merge it once CI is green.",
+      "source": "./plugins/git",
+      "category": "productivity"
+    }
+  ]
+}
