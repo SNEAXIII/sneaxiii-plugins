@@ -2,7 +2,7 @@
 name: merge-pr
 description: >
   Merge une PR ouverte sur la branche par défaut une fois la CI verte : liste et trie les PR,
-  attend les checks, squash avec un titre conventionnel, supprime la branche et resynchronise.
+  attend les checks et diagnostique un check rouge, squash avec un titre conventionnel, supprime la branche et resynchronise.
   Jamais pour promouvoir la branche par défaut vers une branche de release ou de staging.
 user-invocable: true
 ---
@@ -53,8 +53,18 @@ Rien n'est corrigé ici. Un bloquant s'expose et arrête le skill.
 
    - En cours (`PENDING`) : attendre par pauses de 5 s tant que l'état évolue, **plafond dur
      10 min**. Au-delà, donner l'état courant et s'arrêter.
-   - Un `FAILURE` : nommer le check rouge et donner son `link`, puis s'arrêter. **Ne pas
-     diagnostiquer.**
+   - Un `FAILURE` : **diagnostiquer** avant de s'arrêter. Le `link` d'un check GitHub Actions
+     porte `runs/<run-id>/job/<job-id>` :
+
+     ```bash
+     gh run view <run-id> --job <job-id> --log-failed
+     ```
+
+     Le diagnostic est fini quand il nomme le test ou l'étape rouge, l'erreur exacte, et dit si
+     la cause tient au diff de la PR (`gh pr diff <n> --name-only`) ou lui est étrangère
+     (flaky, infra). Rapporter : check, `link`, cause, puis la suite — correctif proposé si la
+     cause tient au diff, sinon `gh run rerun <run-id> --failed`. Un check hors GitHub Actions
+     (Sonar, Snyk…) : donner son `link` seul.
    - Un check absent n'est pas un bloquant : les checks conditionnels aux chemins sont normaux.
 5. **Worktree local** — `git status --short` sur la branche de la PR, juste avant le merge.
    Un fichier suivi modifié depuis le dernier push : s'arrêter et demander s'il fait partie de la
