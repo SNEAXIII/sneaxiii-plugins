@@ -2,7 +2,7 @@
 name: merge-pr
 description: >
   Merge une PR ouverte sur la branche par défaut une fois la CI verte : liste et trie les PR,
-  attend les checks et diagnostique un check rouge, squash avec un titre conventionnel, supprime la branche et resynchronise.
+  surveille les checks en tâche de fond et répare un check rouge, squash avec un titre conventionnel, supprime la branche et resynchronise.
   Jamais pour promouvoir la branche par défaut vers une branche de release ou de staging.
 user-invocable: true
 ---
@@ -40,7 +40,7 @@ merger. Ne jamais en choisir une d'office, même s'il n'y en a qu'une.
 
 ## Pré-vol — bloquants
 
-Rien n'est corrigé ici. Un bloquant s'expose et arrête le skill.
+Un bloquant 1 à 3 s'expose et arrête le skill.
 
 1. **Base de la PR** — si `baseRefName != <base>` : c'est une promotion, hors de ce skill.
 2. **Draft** — s'arrêter, dire qu'il faut la sortir de draft.
@@ -51,10 +51,16 @@ Rien n'est corrigé ici. Un bloquant s'expose et arrête le skill.
    gh pr checks <n> --json name,state,link
    ```
 
-   - En cours (`PENDING`) : attendre par pauses de 5 s tant que l'état évolue, **plafond dur
-     10 min**. Au-delà, donner l'état courant et s'arrêter.
-   - Un `FAILURE` : **diagnostiquer** avant de s'arrêter. Le `link` d'un check GitHub Actions
-     porte `runs/<run-id>/job/<job-id>` :
+   - En cours (`PENDING`) : poser un **watch** en tâche de fond (`run_in_background`), sans
+     plafond, et **continuer à travailler** sur le reste de la conversation. La notification de
+     fin reprend le skill au point 4.
+
+     ```bash
+     gh pr checks <n> --watch --interval 30 > /dev/null; gh pr checks <n> --json name,state,link
+     ```
+
+   - Un `FAILURE` : **diagnostiquer**. Le `link` d'un check GitHub Actions porte
+     `runs/<run-id>/job/<job-id>` :
 
      ```bash
      gh run view <run-id> --job <job-id> --log-failed
@@ -62,26 +68,29 @@ Rien n'est corrigé ici. Un bloquant s'expose et arrête le skill.
 
      Le diagnostic est fini quand il nomme le test ou l'étape rouge, l'erreur exacte, et dit si
      la cause tient au diff de la PR (`gh pr diff <n> --name-only`) ou lui est étrangère
-     (flaky, infra). Rapporter : check, `link`, cause, puis la suite — correctif proposé si la
-     cause tient au diff, sinon `gh run rerun <run-id> --failed`. Un check hors GitHub Actions
-     (Sonar, Snyk…) : donner son `link` seul.
+     (flaky, infra). Puis réparer :
+     - cause dans le diff → corriger sur la branche de la PR, commiter, pousser ;
+     - cause étrangère → `gh run rerun <run-id> --failed`.
+
+     Reposer le watch ensuite. Deuxième échec sur le même check : rapporter check, `link` et
+     cause, et s'arrêter. Un check hors GitHub Actions (Sonar, Snyk…) : donner son `link` et
+     s'arrêter.
    - Un check absent n'est pas un bloquant : les checks conditionnels aux chemins sont normaux.
 5. **Worktree local** — `git status --short` sur la branche de la PR, juste avant le merge.
    Un fichier suivi modifié depuis le dernier push : s'arrêter et demander s'il fait partie de la
    PR. L'utilisateur retouche souvent la branche entre le push et le merge.
 
-## Récapitulatif — une seule confirmation
+## Titre du squash
 
-Afficher : numéro, titre, auteur, branche, checks passés, et le **titre du commit de squash**.
-Le squash reprend par défaut le titre de la PR ; c'est lui qui finit dans l'historique et le
-changelog.
+Le squash reprend le titre de la PR ; c'est lui qui finit dans l'historique et le changelog.
 
 - Titre conventionnel (`feat:`, `fix:`, `chore:`, `ci:`, `refactor:`, `docs:`, `test:`, `build:`,
-  `style:`) : le garder tel quel.
+  `style:`) : le garder, et merger dès les checks verts — `/merge-pr <n>` vaut feu vert.
 - Sinon : proposer un titre corrigé selon les règles de type du `CLAUDE.md` (à défaut, d'après ce
-  que voit l'utilisateur final, pas d'après les fichiers touchés), et demander.
+  que voit l'utilisateur final, pas d'après les fichiers touchés), et le faire valider **avant**
+  de poser le watch, pour que la suite s'enchaîne seule.
 
-C'est le seul endroit où le skill réécrit quelque chose. Une fois confirmé, tout s'enchaîne.
+Une commande enchaînée après le merge (`/release-pr`…) part dès le merge fait.
 
 ## Déroulé
 
