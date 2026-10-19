@@ -13,13 +13,12 @@ Workflow complet pour ouvrir une PR sur la branche par défaut depuis la branche
 
 ## Steps
 
-1. **Commit** tout ce qui est staged avec un message conventionnel (`feat:`, `fix:`,
-   `refactor:`, etc.) et le co-author Claude.
+1. **Branche** — sur `<base>`, créer d'abord une branche de feature (`<type>/<slug>`) :
+   le skill commit s'arrête sur la branche par défaut.
 
-2. **Push** la branche vers origin :
-   ```bash
-   git push -u origin <branch>
-   ```
+2. **Commit et push** via le skill `git:commit` avec l'argument `push` — jamais un commit
+   à la main. Il découpe les changements en commits par responsabilité, puis pousse la
+   branche (`git push -u origin HEAD`) une fois tous les commits faits.
 
 3. **Créer la PR** via le CLI `gh` :
    ```bash
@@ -36,6 +35,7 @@ Sinon, dériver le titre depuis les commits de la branche (`git log <base>..HEAD
 
 ## Notes
 
-- Si rien n'est staged et qu'il n'y a pas de diff, signaler à l'utilisateur et s'arrêter.
+- Si rien n'est à commiter et que la branche n'a aucun commit d'avance sur `<base>`,
+  signaler à l'utilisateur et s'arrêter.
 - Ne jamais forcer un push (`--force`).
 - Pas de lint ni de format à la main : les hooks pre-commit du repo s'en chargent au commit.
