@@ -1,7 +1,7 @@
 ---
 name: commit
 description: Use when ready to commit changes, or to commit and push — analyzes git status and diff, groups changes by responsibility, creates separate conventional commits in the right order with Co-Authored-By trailer. Pass `push` to push once every commit is made, and `default` (or `def`) to work straight on the default branch.
-model: claude-haiku-5-5
+model: haiku
 ---
 
 # Git Commit
