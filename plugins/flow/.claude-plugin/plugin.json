@@ -1,7 +1,7 @@
 {
   "name": "flow",
-  "version": "0.1.0",
-  "description": "Feature workflow skills: grill, plan, feature (grill, plan, execute, PR).",
+  "version": "0.1.1",
+  "description": "Feature workflow skills: grill, plan, feature (grill, plan, execute, PR), handoff.",
   "author": {
     "name": "Sneaxiii",
     "url": "https://github.com/SNEAXIII"
