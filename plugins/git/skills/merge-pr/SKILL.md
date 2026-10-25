@@ -1,116 +1,120 @@
 ---
 name: merge-pr
 description: >
-  Merge une PR ouverte sur la branche par défaut une fois la CI verte : liste et trie les PR,
-  surveille les checks en tâche de fond et répare un check rouge, squash avec un titre conventionnel, supprime la branche et resynchronise.
-  Jamais pour promouvoir la branche par défaut vers une branche de release ou de staging.
+  Merge an open PR into the default branch once CI is green: lists and sorts the PRs, watches the
+  checks in the background and repairs a red check, squashes with a conventional title, deletes the
+  branch and resyncs. Never for promoting the default branch to a release or staging branch.
 user-invocable: true
 ---
 
 # Merge PR
 
-Merge d'une PR ouverte sur la branche par défaut. **Une seule PR par appel.**
+Merge an open PR into the default branch. **One PR per call.**
 `<base>` = `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`.
 
-Ouvrir la PR d'une feature : `/make-pr`.
+To open a feature's PR: `/make-pr`.
 
-## Sélection de la PR
+## Picking the PR
 
-`/merge-pr <n>` : la PR est donnée, sauter la liste (la confirmation du récapitulatif reste due).
+`/merge-pr <n>`: the PR is given, skip the list (the summary confirmation is still due).
 
-`/merge-pr` nu : lister et **trier**.
+Bare `/merge-pr`: list and **sort**.
 
 ```bash
 gh pr list --state open --base <base> --json number,title,author,isDraft,mergeable,mergeStateStatus,headRefName,statusCheckRollup
 ```
 
-Deux tableaux séparés, **humaines** puis **bots** (`author.is_bot`, dependabot, renovate). Aucun
-traitement particulier pour les bots : le tri sert juste à ce que le lot de mises à jour ne noie pas
-les PR de feature.
+Two separate tables, **humans** then **bots** (`author.is_bot`, dependabot, renovate). No special
+treatment for bots: the split only keeps the batch of updates from drowning the feature PRs.
 
-Dans chaque tableau, deux blocs :
+In each table, two blocks:
 
-| Bloc | Critère |
+| Block | Criterion |
 | --- | --- |
-| **mergeable direct** | `mergeable == "MERGEABLE"`, pas draft, rollup de checks vert |
-| **bloquée** | conflit (`CONFLICTING`), draft, un check rouge, ou des checks en cours |
+| **ready to merge** | `mergeable == "MERGEABLE"`, not draft, green check rollup |
+| **blocked** | conflict (`CONFLICTING`), draft, a red check, or checks still running |
 
-Afficher numéro, titre, auteur, branche, et pour les bloquées **la raison**. Puis demander laquelle
-merger. Ne jamais en choisir une d'office, même s'il n'y en a qu'une.
+Show number, title, author, branch, and for blocked ones **the reason**. Then ask which one to
+merge. Never pick one by default, even when there is only one.
 
-## Pré-vol — bloquants
+## Preflight — blockers
 
-Un bloquant 1 à 3 s'expose et arrête le skill.
+Blockers 1 to 3 are reported and stop the skill.
 
-1. **Base de la PR** — si `baseRefName != <base>` : c'est une promotion, hors de ce skill.
-2. **Draft** — s'arrêter, dire qu'il faut la sortir de draft.
-3. **Conflit** — `mergeable == "CONFLICTING"` : s'arrêter, dire qu'un rebase sur `<base>` est dû.
+1. **PR base** — if `baseRefName != <base>`: it is a promotion, outside this skill.
+2. **Draft** — stop, say it must leave draft.
+3. **Conflict** — `mergeable == "CONFLICTING"`: stop, say a rebase on `<base>` is due.
 4. **Checks**
 
    ```bash
    gh pr checks <n> --json name,state,link
    ```
 
-   - En cours (`PENDING`) : poser un **watch** en tâche de fond (`run_in_background`), sans
-     plafond, et **continuer à travailler** sur le reste de la conversation. La notification de
-     fin reprend le skill au point 4.
+   - Running (`PENDING`): start a **watch** in the background (`run_in_background`), with no cap,
+     and **keep working** on the rest of the conversation. The completion notification resumes
+     the skill at step 4.
 
      ```bash
      gh pr checks <n> --watch --interval 30 > /dev/null; gh pr checks <n> --json name,state,link
      ```
 
-   - Un `FAILURE` : **diagnostiquer**. Le `link` d'un check GitHub Actions porte
-     `runs/<run-id>/job/<job-id>` :
+   - A `FAILURE`: **diagnose**. A GitHub Actions check's `link` holds `runs/<run-id>/job/<job-id>`:
 
      ```bash
      gh run view <run-id> --job <job-id> --log-failed
      ```
 
-     Le diagnostic est fini quand il nomme le test ou l'étape rouge, l'erreur exacte, et dit si
-     la cause tient au diff de la PR (`gh pr diff <n> --name-only`) ou lui est étrangère
-     (flaky, infra). Puis réparer :
-     - cause dans le diff → corriger sur la branche de la PR, commiter, pousser ;
-     - cause étrangère → `gh run rerun <run-id> --failed`.
+     The diagnosis is done when it names the red test or step, the exact error, and says whether
+     the cause lies in the PR diff (`gh pr diff <n> --name-only`) or outside it (flaky, infra).
+     Then repair:
+     - cause in the diff → fix on the PR branch, commit, push;
+     - cause outside → `gh run rerun <run-id> --failed`.
 
-     Reposer le watch ensuite. Deuxième échec sur le même check : rapporter check, `link` et
-     cause, et s'arrêter. Un check hors GitHub Actions (Sonar, Snyk…) : donner son `link` et
-     s'arrêter.
-   - Un check absent n'est pas un bloquant : les checks conditionnels aux chemins sont normaux.
-5. **Worktree local** — `git status --short` sur la branche de la PR, juste avant le merge.
-   Un fichier suivi modifié depuis le dernier push : s'arrêter et demander s'il fait partie de la
-   PR. L'utilisateur retouche souvent la branche entre le push et le merge.
+     Start the watch again afterwards. Second failure on the same check: report the check, its
+     `link` and the cause, and stop. A check outside GitHub Actions (Sonar, Snyk…): give its
+     `link` and stop.
+   - A missing check is not a blocker: path-conditional checks are normal.
+5. **Local worktree** — `git status --short` on the PR branch, right before the merge. A tracked
+   file modified since the last push: stop and ask whether it belongs to the PR. The user often
+   touches the branch between the push and the merge.
 
-## Titre du squash
+## Squash title
 
-Le squash reprend le titre de la PR ; c'est lui qui finit dans l'historique et le changelog.
+The squash takes the PR title; it is what ends up in the history and the changelog.
 
-- Titre conventionnel (`feat:`, `fix:`, `chore:`, `ci:`, `refactor:`, `docs:`, `test:`, `build:`,
-  `style:`) : le garder, et merger dès les checks verts — `/merge-pr <n>` vaut feu vert.
-- Sinon : proposer un titre corrigé selon les règles de type du `CLAUDE.md` (à défaut, d'après ce
-  que voit l'utilisateur final, pas d'après les fichiers touchés), et le faire valider **avant**
-  de poser le watch, pour que la suite s'enchaîne seule.
+- Conventional title (`feat:`, `fix:`, `chore:`, `ci:`, `refactor:`, `docs:`, `test:`, `build:`,
+  `style:`): keep it, and merge as soon as checks are green — `/merge-pr <n>` is the go-ahead.
+- Otherwise: propose a corrected title following the type rules in `CLAUDE.md` (failing that, by
+  what the end user sees, not by which files changed), and get it approved **before** starting
+  the watch, so the rest runs on its own.
 
-Une commande enchaînée après le merge (`/release-pr`…) part dès le merge fait.
+A command chained after the merge (`/release-pr`…) starts as soon as the merge is done.
 
-## Déroulé
+## Run
 
-1. **Squash**, jamais un merge commit — un merge commit reporte le titre de la PR dans son corps,
-   qu'un générateur de changelog compte alors une seconde fois :
+1. **Squash**, never a merge commit — a merge commit repeats the PR title in its body, which a
+   changelog generator then counts twice:
 
    ```bash
-   gh pr merge <n> --squash --delete-branch --subject "<titre validé>"
+   gh pr merge <n> --squash --delete-branch --subject "<approved title>"
    ```
 
-2. **Resynchroniser le local** :
+2. **Resync local**:
 
    ```bash
    git checkout <base> && git pull --prune
    ```
 
-   Si le worktree est sale, ne rien forcer : le dire et laisser l'utilisateur ranger.
+   If the worktree is dirty, force nothing: say so and let the user tidy up.
 
-3. **Si le repo utilise release-please** (`release-please-config.json` présent), rapporter son
-   état sans rien lancer :
+   If the PR branch lives in a linked worktree (`git worktree list`), `<base>` is checked out in
+   the main checkout: pull there instead. Then offer to remove the worktree — dependency
+   junctions or symlinks first (`rmdir` on Windows, `rm` on the link elsewhere), then
+   `git worktree remove <path>`. Removing it with the links still in place deletes the main
+   checkout's dependencies through them.
+
+3. **If the repo uses release-please** (`release-please-config.json` present), report its state
+   without starting anything:
 
    ```bash
    gh run list --workflow "Release Please" --branch <base> -L 1 --json status,conclusion,url
@@ -118,11 +122,11 @@ Une commande enchaînée après le merge (`/release-pr`…) part dès le merge f
      --jq '.[] | select(.headRefName | startswith("release-please--"))'
    ```
 
-   Donner la version que porte la PR release-please.
+   Give the version the release-please PR carries.
 
-## Règles
+## Rules
 
-- Une seule PR par appel — pas de lot de bots enchaîné.
-- Jamais `--admin` : un check rouge n'est pas contournable depuis ici.
-- Jamais `--force`, jamais de push direct sur `<base>`.
-- Jamais `--merge` ni `--rebase` : squash uniquement.
+- One PR per call — no chained batch of bot PRs.
+- Never `--admin`: a red check cannot be bypassed from here.
+- Never `--force`, never a direct push to `<base>`.
+- Never `--merge` or `--rebase`: squash only.

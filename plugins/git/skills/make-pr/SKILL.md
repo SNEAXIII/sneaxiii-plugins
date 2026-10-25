@@ -1,41 +1,43 @@
 ---
 name: make-pr
 description: >
-  Ouvre la PR d'une branche de feature sur la branche par défaut : commit, push, `gh pr create`.
-  Jamais pour promouvoir la branche par défaut vers une branche de release ou de staging.
+  Open the PR of a feature branch against the default branch: commit, push, `gh pr create`.
+  Never for promoting the default branch to a release or staging branch.
 user-invocable: true
 ---
 
 # Make PR
 
-Workflow complet pour ouvrir une PR sur la branche par défaut depuis la branche courante.
+Full workflow to open a PR against the default branch from the current branch.
 `<base>` = `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`.
 
 ## Steps
 
-1. **Branche** — sur `<base>`, créer d'abord une branche de feature (`<type>/<slug>`) :
-   le skill commit s'arrête sur la branche par défaut.
+1. **Branch** — on `<base>`, first create a feature branch (`<type>/<slug>`):
+   the commit skill stops on the default branch.
 
-2. **Commit et push** via le skill `git:commit` avec l'argument `push` — jamais un commit
-   à la main. Il découpe les changements en commits par responsabilité, puis pousse la
-   branche (`git push -u origin HEAD`) une fois tous les commits faits.
+2. **Commit and push** through the `git:commit` skill with the `push` argument — never a
+   hand-made commit. It splits the changes into commits by responsibility, then pushes the
+   branch (`git push -u origin HEAD`) once every commit is made.
 
-3. **Créer la PR** via le CLI `gh` :
+3. **Create the PR** with the `gh` CLI:
    ```bash
-   gh pr create --base <base> --head <branch> --title "<titre>" --body ""
+   gh pr create --base <base> --head <branch> --title "<title>" --body ""
    ```
-   - Body vide ou minimal — pas de sections Summary / Test plan.
-   - Si `gh` répond `HTTP 401: Bad credentials`, demander à l'utilisateur de lancer
-     `gh auth login` puis relancer la commande.
+   - Several remotes (a fork and its upstream) and no `gh repo set-default`: ask which repo the
+     PR targets, then pass it with `--repo <owner>/<name>`.
+   - Empty or minimal body — no Summary / Test plan sections.
+   - If `gh` answers `HTTP 401: Bad credentials`, ask the user to run `gh auth login`, then
+     run the command again.
 
 ## Args
 
-Si des args sont fournis (ex: `/make-pr fix login redirect`), les utiliser comme titre de PR.  
-Sinon, dériver le titre depuis les commits de la branche (`git log <base>..HEAD --oneline`).
+If args are given (e.g. `/make-pr fix login redirect`), use them as the PR title.
+Otherwise, derive the title from the branch commits (`git log <base>..HEAD --oneline`).
 
 ## Notes
 
-- Si rien n'est à commiter et que la branche n'a aucun commit d'avance sur `<base>`,
-  signaler à l'utilisateur et s'arrêter.
-- Ne jamais forcer un push (`--force`).
-- Pas de lint ni de format à la main : les hooks pre-commit du repo s'en chargent au commit.
+- If there is nothing to commit and the branch has no commit ahead of `<base>`, tell the user
+  and stop.
+- Never force a push (`--force`).
+- No hand-run lint or format: the repo's pre-commit hooks handle it at commit time.
