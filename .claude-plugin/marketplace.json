@@ -12,6 +12,12 @@
       "description": "Git workflow: conventional commits, open a PR, squash-merge it once CI is green.",
       "source": "./plugins/git",
       "category": "productivity"
+    },
+    {
+      "name": "flow",
+      "description": "Feature workflow: grill the idea, write the plan, execute it with subagents, open the PR.",
+      "source": "./plugins/flow",
+      "category": "productivity"
     }
   ]
 }
