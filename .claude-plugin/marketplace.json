@@ -15,7 +15,7 @@
     },
     {
       "name": "flow",
-      "description": "Feature workflow: grill the idea, write the plan, execute it with subagents, open the PR.",
+      "description": "Feature workflow: grill the idea, write the plan, execute it with subagents, open the PR. Explore non-code decisions into topic sheets.",
       "source": "./plugins/flow",
       "category": "productivity"
     }
