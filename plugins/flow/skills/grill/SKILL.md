@@ -28,6 +28,12 @@ Word each question so "yes" accepts your recommendation. Wait for the answers be
 What can be read in the code or the tools, you look up (a subagent if it is long), you do not ask.
 If the user states a behavior the code contradicts, show it. Decisions are the user's.
 
+What moves fast (library versions, deprecated APIs, a tool's current state, prices, the latest
+model of anything) gets a fresh web search, not memory.
+
+A new fact reopens a settled decision: say which decision it breaks, re-run the comparison, and
+update what was written. Do not defend the old choice.
+
 ## The glossary
 
 The project's vocabulary file: `CONTEXT.md`, or `GLOSSARY.md` if that one already exists. A

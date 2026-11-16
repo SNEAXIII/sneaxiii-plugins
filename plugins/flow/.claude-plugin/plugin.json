@@ -1,6 +1,6 @@
 {
   "name": "flow",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Feature workflow skills: grill, plan, feature (grill, plan, execute, PR), explore (non-code decisions in topic sheets), handoff.",
   "author": {
     "name": "Sneaxiii",

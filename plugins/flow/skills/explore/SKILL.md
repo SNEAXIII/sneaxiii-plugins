@@ -22,12 +22,8 @@ asking again.
 
 Follow skill `flow:grill`: rounds, a recommendation per question, the glossary. On top of it:
 
-- **Facts are researched, never asked.** Inspect the machine, read the user's repos and orgs
-  (`gh`), search the web. Prices, availability and "latest model" questions always get a fresh
-  search: they move by the month.
+- **Research beyond the code**: inspect the machine, read the user's repos and orgs (`gh`).
 - **Date every price and mark it indicative.** Cite the sources at the bottom of the sheet.
-- **A new fact reopens a settled decision.** Say which decision it breaks, re-run the comparison,
-  and update the sheets. Do not defend the old choice.
 - **Name the trade-off in user terms**: euros per year, watts, decibels, hours of their time,
   not just specs.
 - **Flag dubious deals and sellers** when the user pastes one: check reviews before praising a
