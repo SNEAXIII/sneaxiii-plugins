@@ -45,14 +45,18 @@ For each `### Task N`, in order (one working tree, never in parallel):
 
 1. **Implement** — a subagent gets the plan path, the task text, the Global Constraints and the
    workspace path. A project agent if one fits (`.claude/agents/`), otherwise `general-purpose`.
-   Instruction: implement, run the relevant tests, do not commit, return the list of files touched.
+   Instruction: implement, run the relevant tests, do not commit, return the files touched, the
+   public names it created and its departures from the plan.
 2. **Review** — another subagent gets the task and `git diff`. It must be able to run the tests:
    the project's reviewer, otherwise `general-purpose`, never a read-only agent. A low-risk task
    (pure functions, one module) can run it on a smaller model. It answers OK, or a list of
    precise problems.
 3. **Fix** — problems go back to the implementer (`SendMessage`), then a new review.
    On the second rejection, stop and show the problems to the user.
-4. **Commit** — as the settings say (plain commit or `git:commit`), pushed only if they say so.
+4. **Update the plan** — write the names and departures under the task, as a `**Departures:**`
+   line, so the next implementer reads a plan that matches the code.
+5. **Commit** — as the settings say (plain commit or `git:commit`), pushed only if they say so;
+   the plan update goes in the same commit.
 
 One progress line per finished task. At the end, summarize what was done and what departed from
 the plan.
