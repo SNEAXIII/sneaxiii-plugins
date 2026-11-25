@@ -1,7 +1,7 @@
 {
   "name": "flow",
-  "version": "0.2.1",
-  "description": "Feature workflow skills: grill, plan, feature (grill, plan, execute, PR), explore (non-code decisions in topic sheets), handoff.",
+  "version": "0.3.0",
+  "description": "Feature workflow skills: grill, plan, feature (grill, plan, execute, PR), explore (decisions and topics: purchases, news, tech watch, concepts) in topic sheets, handoff.",
   "author": {
     "name": "Sneaxiii",
     "url": "https://github.com/SNEAXIII"
